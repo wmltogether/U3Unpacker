@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 ''' Created on 2015-8-11 @author: wmltogether '''
-
 '''
 ver 20150811
 >修正U3D版本判断
