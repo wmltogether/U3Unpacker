@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from LIBU3D5 import pack_assets
-import os,traceback
+from LIBU3D4 import pack_assets
+import os
 def main():
     if not os.path.exists('assets/'):
         os.makedirs('assets/')
@@ -15,3 +15,4 @@ if __name__=='__main__':
         traceback.print_exc()
     os.system('pause')
     os._exit(0)
+
