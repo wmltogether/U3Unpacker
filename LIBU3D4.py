@@ -1,25 +1,12 @@
 # -*- coding: utf-8 -*-
-''' Created on 2015-8-11 @author: wmltogether '''
 '''
-ver 20150811
->修正U3D版本判断
-ver 20150727
->增加Debug output
->增加Classid判断
-ver 20150414
->增加Unity 版本判断机制
-ver 20150323
->添加Unity 5支援
->移除Unity 4支援
-ver 20150127
->增加了Texture Sprite扩展名(tmsk)
-ver 20141128
+ver 1128
 >增加了非法文件名判断
-ver 20141103
+ver 1103
 >增加了版本号地址判断
-ver 20140827
+ver 0827
 >修改了textassets的扩展名
-ver 20140815
+ver 0815
 >目前仅支持unity 4.x assets格式
 >依然兼容旧版unity打包脚本
 >添加了文件格式的简单判断，目前支持最基础的图片音频纯文本类型支持，判断规则详见
@@ -31,8 +18,6 @@ http://docs.unity3d.com/Documentation/Manual/ClassIDReference.html
 
 '''
 import os,codecs
-import logging
-import logging.handlers 
 from struct import unpack,pack
 import md5
 def dir_fn(folder):
@@ -42,11 +27,9 @@ def dir_fn(folder):
             adrlist=os.path.join(root, name)
             dirlst.append(adrlist)
     return dirlst
-
 def getsize(fn):
     fsize=os.path.getsize(fn)
     return fsize
-
 def getSplitNUMS(fn):
     if not os.path.exists('assets/'):
         os.makedirs('assets/') 
@@ -59,7 +42,6 @@ def getSplitNUMS(fn):
         nums=fsize/(0x00100000)+1
     f.close()
     return nums
-
 def getObbMD5(obbname):
     fp=open(obbname,'rb')
     fp.seek(-0x10016,2)
@@ -68,15 +50,16 @@ def getObbMD5(obbname):
     m.update(string)
     fp.close()
     return m.hexdigest()
-
 def del_png(fl):
     new_fl=[]
     for a in fl:
-        if a[-4:].lower() not in ['.png']:
+        if a[-4:].lower() not in ['.png' , '.exe']:
             new_fl.append(a)
             
     return new_fl
-
+def getClassDict():
+    # Based on http://docs.unity3d.com/Documentation/Manual/ClassIDReference.html
+    ClassDict={}
 def getClassDict():
     # Based on http://docs.unity3d.com/Documentation/Manual/ClassIDReference.html
     ClassDict={}
@@ -314,9 +297,8 @@ def getClassDict():
     ClassDict[1112] = ('SubstanceImporter' , '.SubstanceImporter')
     ClassDict[1113] = ('LightmapParameters' , '.LightmapParameters')
     ClassDict[1120] = ('LightmapSnapshot' , '.LightmapSnapshot')
-    ClassDict[-14]=('NGUI Plugin Text Type','.ngt')# maybe huh ^——^
+    ClassDict[-14]=('NGUI Plugin Text Type','.ngt')
     return ClassDict
-
 def MatchClassID(classid,filename_mark):
     ClassDict=getClassDict()
     if classid in ClassDict:
@@ -327,7 +309,6 @@ def MatchClassID(classid,filename_mark):
     else:
         (FileType,extname) = ('Unknown','.bin')
     return (FileType,extname)
-
 def fix_ascii_name(name):
     if ':' in name:
         return ''
@@ -342,31 +323,13 @@ def fix_ascii_name(name):
     if "<" in name:
         return '' 
     if ">" in name:
-        return ''
-    if "\x04" in name:
-        return ''
+        return '' 
     try:
         binname=name.encode('ascii')
         return name
     except:
         return ''
-
-def check_version(version):
-    (main_v , sub_v , f_v) = version.split('.')[:3]
-    main_v = int(main_v , 10)
-    sub_v = int(sub_v , 10)
-    mask = 0
-    a0 = 0
-    a1 = 0
-    if 'f' in f_v:
-        a0 , a1 = f_v.split('f')[:2]
-    if 'p' in f_v:
-        a0 , a1 = f_v.split('p')[:2]
-    a0 =int(a0 ,10)
-    a1 = int(a1 , 10)
-    return (main_v , sub_v , a0 ,a1)
-
-def unpack_assets(fn , logger):
+def unpack_assets(fn):
     if not os.path.exists('assets/'):
         os.makedirs('assets/')    
     dn = os.path.splitext(fn)[0]
@@ -380,49 +343,16 @@ def unpack_assets(fn , logger):
     fp.seek(0xc)
     head_size = unpack('>I',fp.read(4))[0]
     fp.seek(0x14)
-    version = fp.read(10).split('\x00')[0]
-    (main_v , sub_v , a0 ,a1) = (0 , 0 , 0, 0)
-    try:
-        (main_v , sub_v , a0 ,a1) = check_version(version) # Dirty and slow method
-    except:
-        return None
-    #print(main_v , sub_v , a0 ,a1)
-    shift = 0
-    if main_v == 5 and sub_v >= 0 and a0 > 0:
-        shift = 4
-    if main_v == 5 and sub_v >= 1 and a0 >= 0:
-        shift = 4
-    pos = len(version) - 7 
-    fp.seek(0x21+pos)
-    print('num pos:%x'%fp.tell())
-    index_num = unpack('I',fp.read(4))[0]
-    
-    for i in range(index_num):
-        mark0, = unpack('i' , fp.read(4))
-        if mark0<0:
-            linked_data = fp.read(0x20)
-        else:
-            linked_data = fp.read(0x10)
-    print('Unpacking:%s Unity Ver:%s :index Nums:%d, Package shift:%x'%(fn, version, index_num , shift))
-    logger.debug('Unpacking:%s Unity Ver:%s :index Nums:%d, Package shift:%x'%(fn, version, index_num , shift))
+    pos = len(fp.read(10).split('\x00')[0]) - 7
+    fp.seek(0x28+pos)
     num = unpack('I',fp.read(4))[0]
-    fp.seek(3 , 1)
-    tmp_pos = fp.tell()
-    #print('index location:',hex(tmp_pos))
+    print('Unpacking:%s File Nums:%d'%(fn,num))
     for i in range(num):
-
-        fp.seek(tmp_pos+i*(0x18+shift))
-        #print("hex:%08x"%(tmp_pos+i*(0x18+shift)))
+        fp.seek(0x30+i*0x14+pos)
         tmp_ofs=fp.tell()
-
-        (index_id,unk)=unpack('2I',fp.read(8))
-        (offset,size)=unpack('2I',fp.read(0x8))
-        
-        (classid ,classid_FF)=unpack('2i',fp.read(0x8))# get classid and index id
-        
-        fp.read(shift)
+        (offset,size)=unpack('2I',fp.read(8))
+        (classid0,classid,index_id)=unpack('3I',fp.read(0xc))# get classid and index id
         offset+=head_size
-        #print(index_id , classid , hex(offset) , hex(size))
         fp.seek(offset,0)
         dat=fp.read(size)
         if size>=4:
@@ -433,11 +363,8 @@ def unpack_assets(fn , logger):
                 try:
                     name = dat[4:filename_length+4].decode('utf8').replace(' ','_')
                     name=fix_ascii_name(name)
-                    
                     (FileType,extname)=MatchClassID(classid,filename_mark)
                     final_name='%08d_%s%s'%(i,name,extname)
-                    #for debug
-                    logger.debug("output file :%s_unpacked/%s , ClassID is %d"%(dn,final_name , classid))
                     if not '\x00' in final_name:
                         dest = open('assets/%s_unpacked/%s'%(dn,final_name),'wb')
                     else:
@@ -446,30 +373,21 @@ def unpack_assets(fn , logger):
                 except:
                     filename_mark=False
                     (FileType,extname)=MatchClassID(classid,filename_mark)
-                    
                     final_name='%08d%s'%(i,extname)
-                    #for debug
-                    logger.debug("output file :%s_unpacked/%s , ClassID is %d"%(dn,final_name , classid))
                     dest = open('assets/%s_unpacked/%s'%(dn,final_name),'wb')
                 
             else:
                 filename_mark=False
                 (FileType,extname)=MatchClassID(classid,filename_mark)
-                
                 final_name='%08d%s'%(i,extname)
-                #for debug
-                logger.debug("output file :%s_unpacked/%s , ClassID is %d"%(dn,final_name , classid))
                 dest = open('assets/%s_unpacked/%s'%(dn,final_name),'wb')
         else:
             final_name='%08d.bin'%(i)
-            #for debug
-            logger.debug("output file :%s_unpacked/%s , ClassID is %d"%(dn,final_name , classid))
             dest = open('assets/%s_unpacked/%s'%(dn,final_name),'wb')
         #print('%08x|%s'%(tmp_ofs,final_name))
         dest.write(dat)
         dest.close()
     fp.close()
-
 def pack_assets(fn):
     dn = os.path.splitext(fn)[0]
     if not os.path.isdir('assets/%s_unpacked'%dn):
@@ -479,26 +397,15 @@ def pack_assets(fn):
     fn = 'assets/'+fn
 
     fp = open(fn,'rb+')
+    print('Packing %s'%fn)
     fp.seek(0xc)
     head_size = unpack('>I',fp.read(4))[0]
     fp.seek(0x14)
-    version = fp.read(10).split('\x00')[0]
-    (main_v , sub_v , a0 ,a1) = check_version(version)
-    pos = len(version) - 7
-    fp.seek(0x21+pos)
-    index_num = unpack('I',fp.read(4))[0]
-    print('Packing:%s Unity Ver:%s :index Nums:%d'%(fn, version, index_num))
-    for i in range(index_num):
-        mark0, = unpack('i' , fp.read(4))
-        if mark0<0:
-            linked_data = fp.read(0x20)
-        else:
-            linked_data = fp.read(0x10)
+    pos = len(fp.read(10).split('\x00')[0]) - 7
+    fp.seek(0x28+pos)
     num = unpack('I',fp.read(4))[0]
-    fp.seek(3 , 1)
-    tmp_pos = fp.tell()
+
     fp.seek(head_size)
-    fp.truncate()
     ol = []
     sl = []
     fl = dir_fn('assets/%s_unpacked'%dn)
@@ -520,12 +427,7 @@ def pack_assets(fn):
     total_size = fp.tell()
 
     for i in range(num):
-        shift = 0
-        if main_v == 5 and sub_v >= 0 and a0 > 0:
-            shift = 4
-        if main_v == 5 and sub_v >= 1 and a0 >= 0:
-            shift = 4
-        fp.seek(tmp_pos+i*(0x18 + shift) +0x8)
+        fp.seek(0x30+i*0x14+pos)
         fp.write(pack('I',ol[i]))
         fp.write(pack('I',sl[i]))
 
