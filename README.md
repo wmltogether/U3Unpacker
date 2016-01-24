@@ -4,30 +4,6 @@ Unity3D Assets Unpacker
 
 '''
 
-ver 20150811
-
->修正U3D版本判断
-
-ver 20150727
-
->增加Debug output
-
->增加Classid判断
-
-ver 20150414
-
->增加Unity 版本判断机制
-
-ver 20150323
-
->添加Unity 5支援
-
->移除Unity 4支援
-
-ver 20150127
-
->增加了Texture Sprite扩展名(tmsk)
-
 ver 20141128
 
 >增加了非法文件名判断
