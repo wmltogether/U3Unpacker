@@ -3,7 +3,9 @@ Unity3D Assets Unpacker
 ''' Created on 2015-8-11 @author: wmltogether '''
 
 '''
+ver 20161216
 
+>重构版本，增加unity5.5支持
 ver 20150811
 
 >修正U3D版本判断
