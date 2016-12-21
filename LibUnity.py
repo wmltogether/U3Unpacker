@@ -20,7 +20,6 @@ class ClassID:
     def _set(self):
         if (505 <= self.version):
             self.classDict[2] = ("Texture", ".tex")
-            self.classDict[5] = ("Font", ".font")
 
         elif (305 <= self.version < 505):
             self.classDict[1] = ('GameObject', '.GameObject')
@@ -327,16 +326,24 @@ class AssetsLoader(object):
 
     def _getPackageIndex55(self):
         # 5.5.x
+        # print("Index Entry:%08x"%self.IndexEntryOffset)
         br = BinaryHelper.BinaryReader(self.baseStream)
         br.Seek(self.IndexEntryOffset)
-        self.packageItemNums = br.ReadInt32()
+
+        self.packageItemNums = br.ReadInt32() # 实际是读4字节，后面再按照4字节补齐
+        position = br.Tell()
         for i in xrange(self.packageItemNums):
-            br.Seek(self.IndexEntryOffset + 4 + i * (0x10 + 4), 0)
+            br.Seek(position, 0)
+            if br.Tell() % 4 != 0:
+                br.Seek(4 - br.Tell() % 4, 1)
             (index_id, unk) = struct.unpack("2I", self.baseStream.read(0x8))
             t_pos = br.Tell()
+
             (offset, size, classid) = struct.unpack(
                 "3I", self.baseStream.read(0xc))
 
+            # print("%08x"%(offset + self.headerSize))
+            position = br.Tell()
             index_entry = self.IndexEntry()
             index_entry.IndexID = i
             index_entry.Offset = offset + self.headerSize
@@ -345,6 +352,7 @@ class AssetsLoader(object):
             index_entry.Offset_ptr = t_pos
 
             br.Seek(offset + self.headerSize, 0)
+            
             fname = ""
             if (index_entry.Size > 4):
                 fname_length = br.ReadInt32()
@@ -354,6 +362,7 @@ class AssetsLoader(object):
             if (index_entry.ClassID in self.ClassIDDict):
                 ext_name = self.ClassIDDict[index_entry.ClassID][1]
             index_entry.ObjectName = fname + ext_name
+            # print("Entry %s :Class ID :%08x"%(index_entry.ObjectName ,classid))
             self.EntryList.append(index_entry)
 
         pass
