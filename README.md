@@ -3,6 +3,10 @@ Unity3D Assets Unpacker
 ''' Created on 2015-8-11 @author: wmltogether '''
 
 '''
+ver 20161221
+
+>修复unity5.5索引对齐导致解包失败的问题
+
 ver 20161216
 
 >重构版本，增加unity5.5支持
