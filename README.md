@@ -1,15 +1,20 @@
 # Unity3D-Assets-Unpacker
 Unity3D Assets Unpacker
+
 ''' Created on 2015-8-11 @author: wmltogether '''
 
+说明：在Unity 5.5+中已经没有Class ID reference这个结构了，所以无法简单识别文件类型，对于纹理格式，纹理数据也被转移到了resS中进行保存。
+
 '''
-ver 20161221
+
+ver 20161216
 
 >修复unity5.5索引对齐导致解包失败的问题
 
 ver 20161216
 
 >重构版本，增加unity5.5支持
+
 ver 20150811
 
 >修正U3D版本判断
