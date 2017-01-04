@@ -362,7 +362,7 @@ class AssetsLoader(object):
             if (index_entry.ClassID in self.ClassIDDict):
                 ext_name = self.ClassIDDict[index_entry.ClassID][1]
             index_entry.ObjectName = fname + ext_name
-            # print("Entry %s :Class ID :%08x"%(index_entry.ObjectName ,classid))
+            # print("Entry %d %s :%08x,%08x,Class ID :%08x"%(index_entry.IndexID, index_entry.ObjectName,index_entry.Offset,index_entry.Size ,classid))
             self.EntryList.append(index_entry)
 
         pass
@@ -391,11 +391,12 @@ class AssetsLoader(object):
         br = BinaryHelper.BinaryReader(self.baseStream)
         if not os.path.exists(dst_folder):
             os.makedirs(dst_folder)
+
         for entry in self.EntryList:
             br.Seek(entry.Offset)
             data = br.ReadBytes(entry.Size)
-            with open("%s/%08x_%s" % (dst_folder,
-                                      entry.IndexId,
+            with open("%s/%08d_%s" % (dst_folder,
+                                      entry.IndexID,
                                       entry.ObjectName), "wb") as dst:
                 dst.write(data)
         self.baseStream.close()
@@ -411,8 +412,8 @@ class AssetsLoader(object):
 
         # 检查所有文件是否存在
         for entry in self.EntryList:
-            name = "%s/%08x_%s" % (input_folder,
-                                   entry.IndexId,
+            name = "%s/%08d_%s" % (input_folder,
+                                   entry.IndexID,
                                    entry.ObjectName)
             if not os.path.exists(name):
                 print("Error: asset not found:%s" % name)
@@ -422,8 +423,8 @@ class AssetsLoader(object):
 
         for i in xrange(len(self.EntryList)):
             entry = self.EntryList[i]
-            name = "%s/%08x_%s" % (input_folder,
-                                   entry.IndexId,
+            name = "%s/%08d_%s" % (input_folder,
+                                   entry.IndexID,
                                    entry.ObjectName)
             fs = open(name, "rb")
             data = fs.read()
@@ -461,7 +462,7 @@ class AssetsLoader(object):
         Offset_ptr = 0
         Offset = 0
         Size = 0
-        IndexId = 0
+        IndexID = 0
         ClassID = 0
         ObjectName = ""
 
