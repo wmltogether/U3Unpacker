@@ -450,7 +450,7 @@ class AssetsLoader(object):
                 "I", entry.Offset - self.headerSize))
             self.baseStream.write(struct.pack("I", entry.Size))
         self.baseStream.seek(4, 0)
-        self.baseStream.write(struct.pack("I", total_size))
+        self.baseStream.write(struct.pack(">I", total_size))
         self.baseStream.close()
         pass
 
