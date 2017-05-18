@@ -1,7 +1,7 @@
 # /usr/bin/python2
 # -*- coding:utf-8 -*-
 '''
-2016-12-16 Unity Assets Reader完全重构
+2017-05-18 Unity Assets Reader完全重构
 @author: wmltogether
 '''
 import os
@@ -18,88 +18,16 @@ class ClassID:
         self._set()
 
     def _set(self):
-        if (505 <= self.version):
-            self.classDict[2] = ("Texture", ".tex")
-
-        elif (305 <= self.version < 505):
-            self.classDict[1] = ('GameObject', '.GameObject')
-            self.classDict[2] = ('Component', '.Component')
-            self.classDict[3] = ('LevelGameManager', '.LevelGameManager')
-            self.classDict[4] = ('Transform', '.Transform')
-            self.classDict[5] = ('TimeManager', '.TimeManager')
-            self.classDict[6] = ('GlobalGameManager', '.GlobalGameManager')
-            self.classDict[8] = ('Behaviour', '.Behaviour')
-            self.classDict[9] = ('GameManager', '.GameManager')
-            self.classDict[11] = ('AudioManager', '.AudioManager')
-            self.classDict[12] = ('ParticleAnimator', '.ParticleAnimator')
-            self.classDict[13] = ('InputManager', '.InputManager')
-            self.classDict[15] = ('EllipsoidParticleEmitter',
-                                  '.EllipsoidParticleEmitter')
-            self.classDict[17] = ('Pipeline', '.Pipeline')
-            self.classDict[18] = ('EditorExtension', '.EditorExtension')
-            self.classDict[19] = ('Physics2DSettings', '.Physics2DSettings')
-            self.classDict[20] = ('Camera', '.Camera')
-            self.classDict[21] = ('Material', '.Material')
-            self.classDict[27] = ('Texture', '.tex')  # texture
-            self.classDict[28] = ('Texture2D', '.tex')  # texture2d
-            self.classDict[29] = ('SceneSettings', '.SceneSettings')
-            self.classDict[30] = ('GraphicsSettings', '.GraphicsSettings')
-            self.classDict[33] = ('MeshFilter', '.MeshFilter')
-            self.classDict[41] = ('OcclusionPortal', '.OcclusionPortal')
-            self.classDict[43] = ('Mesh', '.mesh')
-            self.classDict[45] = ('Skybox', '.Skybox')
-            self.classDict[47] = ('QualitySettings', '.QualitySettings')
-            self.classDict[48] = ('Shader', '.shader')
-            # All text assets have classe id 49
-            self.classDict[49] = ('TextAsset', '.TextAsset')
-            self.classDict[50] = ('Rigidbody2D', '.Rigidbody2D')
-            self.classDict[51] = ('Physics2DManager', '.Physics2DManager')
-            self.classDict[53] = ('Collider2D', '.Collider2D')
-            self.classDict[54] = ('Rigidbody', '.Rigidbody')
-            self.classDict[55] = ('PhysicsManager', '.PhysicsManager')
-            self.classDict[56] = ('Collider', '.Collider')
-            self.classDict[57] = ('Joint', '.Joint')
-            self.classDict[58] = ('CircleCollider2D', '.CircleCollider2D')
-            self.classDict[59] = ('HingeJoint', '.HingeJoint')
-            self.classDict[60] = ('PolygonCollider2D', '.PolygonCollider2D')
-            self.classDict[61] = ('BoxCollider2D', '.BoxCollider2D')
-            self.classDict[62] = ('PhysicsMaterial2D', '.PhysicsMaterial2D')
-            self.classDict[64] = ('MeshCollider', '.MeshCollider')
-            self.classDict[65] = ('BoxCollider', '.BoxCollider')
-            self.classDict[66] = ('SpriteCollider2D', '.SpriteCollider2D')
-            self.classDict[68] = ('EdgeCollider2D', '.EdgeCollider2D')
-            self.classDict[72] = ('ComputeShader', '.ComputeShader')
-            self.classDict[74] = ('AnimationClip', '.AnimationClip')
-            self.classDict[75] = ('ConstantForce', '.ConstantForce')
-            self.classDict[76] = ('WorldParticleCollider',
-                                  '.WorldParticleCollider')
-            self.classDict[78] = ('TagManager', '.TagManager')
-            self.classDict[81] = ('AudioListener', '.AudioListener')
-            self.classDict[82] = ('AudioSource', '.AudioSource')
-            self.classDict[83] = ('AudioClip', '.AudioClip')
-            self.classDict[84] = ('RenderTexture', '.tex')
-            self.classDict[87] = ('MeshParticleEmitter',
-                                  '.MeshParticleEmitter')
-            self.classDict[88] = ('ParticleEmitter', '.ParticleEmitter')
-            self.classDict[89] = ('Cubemap', '.Cubemap')
-            self.classDict[90] = ('Avatar', '.Avatar')
-            self.classDict[91] = ('AnimatorController', '.AnimatorController')
-            self.classDict[92] = ('GUILayer', '.GUILayer')
-            self.classDict[93] = (
-                'RuntimeAnimatorController', '.RuntimeAnimatorController')
-            self.classDict[94] = ('ScriptMapper', '.ScriptMapper')
-            self.classDict[95] = ('Animator', '.Animator')
-            self.classDict[96] = ('TrailRenderer', '.TrailRenderer')
-            self.classDict[98] = ('DelayedCallManager', '.DelayedCallManager')
-            self.classDict[102] = ('TextMesh', '.TextMesh')  # textmesh
-            self.classDict[104] = ('RenderSettings', '.RenderSettings')
-            self.classDict[108] = ('Light', '.Light')
-            self.classDict[109] = ('CGProgram', '.CGProgram')
-            self.classDict[110] = ('BaseAnimationTrack', '.BaseAnimationTrack')
-            self.classDict[111] = ('Animation', '.Animation')
-            pass
-        else:
-            pass
+        fs = open("classidFormat.pydat", "rb")
+        lines = fs.readlines()
+        for line in lines:
+            if (len(line) > 1) and ("\t" in line):
+                line = line.replace("\r", "")
+                line = line.replace("\n", "")
+                classid = int(line.split("\t")[0], 10)
+                classtype = line.split("\t")[1]
+                extension_name = "." + line.split("\t")[2]
+                self.classDict[classid] = (classtype, extension_name)
 
     def GetClassDict(self):
         return self.classDict
@@ -154,6 +82,7 @@ class AssetsLoader(object):
         self.baseStream = None
         self.EntryList = []
         self.ClassIDDict = {}
+        self.LinkedClassIDDict = {}  # unity 5.5专用
         self.Load()
 
         print(
@@ -219,7 +148,7 @@ class AssetsLoader(object):
             self._checkVersion(version)
             unkBool = ord(br.ReadByte())
             base_nums = br.ReadUInt32()
-            print("base_nums:%x"%base_nums)
+            print("base_nums:%x" % base_nums)
 
             for i in xrange(base_nums):
                 m0 = br.ReadInt32()
@@ -230,6 +159,7 @@ class AssetsLoader(object):
                     chk = -1 - m2
                 else:
                     chk = m0
+                self.LinkedClassIDDict[i] = m0
                 tmp = br.ReadInt32()
                 if (tmp == 0):
                     br.Seek(0x10, 1)
@@ -244,7 +174,7 @@ class AssetsLoader(object):
             self._getPackageIndex55()
 
         pass
-    
+
     def _getPackageIndex35(self):
         # 3.5.x - 4.6.x的打包格式
         br = BinaryHelper.BinaryReader(self.baseStream)
@@ -302,6 +232,7 @@ class AssetsLoader(object):
             (offset, size) = struct.unpack(
                 "2I", self.baseStream.read(0x8))
             classid = br.ReadInt32()
+
             classid2 = br.ReadInt16()
             unk = br.ReadInt16()
             unkByte = br.ReadByte()
@@ -334,11 +265,11 @@ class AssetsLoader(object):
 
     def _getPackageIndex55(self):
         # 5.5.x
-        print("Index Entry:%08x"%self.IndexEntryOffset)
+        print("Index Entry:%08x" % self.IndexEntryOffset)
         br = BinaryHelper.BinaryReader(self.baseStream)
         br.Seek(self.IndexEntryOffset)
 
-        self.packageItemNums = br.ReadInt32() # 实际是读4字节，后面再按照4字节补齐
+        self.packageItemNums = br.ReadInt32()  # 实际是读4字节，后面再按照4字节补齐
         position = br.Tell()
         for i in xrange(self.packageItemNums):
             br.Seek(position, 0)
@@ -349,7 +280,8 @@ class AssetsLoader(object):
 
             (offset, size, classid) = struct.unpack(
                 "3I", self.baseStream.read(0xc))
-
+            if (classid in self.LinkedClassIDDict):
+                classid = self.LinkedClassIDDict[classid]
             #print("%08x"%(offset + self.headerSize))
             position = br.Tell()
             index_entry = self.IndexEntry()
@@ -360,7 +292,7 @@ class AssetsLoader(object):
             index_entry.Offset_ptr = t_pos
 
             br.Seek(offset + self.headerSize, 0)
-            
+
             fname = ""
             if (index_entry.Size > 4):
                 fname_length = br.ReadInt32()
@@ -370,7 +302,8 @@ class AssetsLoader(object):
             if (index_entry.ClassID in self.ClassIDDict):
                 ext_name = self.ClassIDDict[index_entry.ClassID][1]
             index_entry.ObjectName = fname + ext_name
-            #print("Entry %d %s :%08x,%08x,Class ID :%08x"%(index_entry.IndexID, index_entry.ObjectName,index_entry.Offset,index_entry.Size ,classid))
+            print("Entry %d %s :%08x,%08x,Class ID :%08x" % (index_entry.IndexID,
+                                                             index_entry.ObjectName, index_entry.Offset, index_entry.Size, classid))
             self.EntryList.append(index_entry)
 
         pass
@@ -442,7 +375,7 @@ class AssetsLoader(object):
             fs.close()
             pos = self.baseStream.tell()
             if pos % 8 != 0:
-                self.baseStream.write("\x00" * (8 - pos%8))
+                self.baseStream.write("\x00" * (8 - pos % 8))
                 pos = self.baseStream.tell()
 
             self.baseStream.write(data)
