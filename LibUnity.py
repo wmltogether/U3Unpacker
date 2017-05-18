@@ -219,16 +219,24 @@ class AssetsLoader(object):
             self._checkVersion(version)
             unkBool = ord(br.ReadByte())
             base_nums = br.ReadUInt32()
+            print("base_nums:%x"%base_nums)
 
             for i in xrange(base_nums):
                 m0 = br.ReadInt32()
                 m1 = ord(br.ReadByte())
                 m2 = br.ReadInt16()
-                if (m1 == 0 and m2 < 0):
-                    br.Seek(0x10, 1)
+                chk = m2
+                if (m2 >= 0):
+                    chk = -1 - m2
                 else:
-                    br.Seek(0x20, 1)
-
+                    chk = m0
+                tmp = br.ReadInt32()
+                if (tmp == 0):
+                    br.Seek(0x10, 1)
+                br.Seek(-4, 1)
+                if (chk < 0):
+                    br.Seek(0x10, 1)
+                br.Seek(0x10, 1)
             self.ClassIDDict = ClassID(
                 self.packageMajorVersion,
                 self.packageMinorVersion).GetClassDict()
@@ -236,7 +244,7 @@ class AssetsLoader(object):
             self._getPackageIndex55()
 
         pass
-
+    
     def _getPackageIndex35(self):
         # 3.5.x - 4.6.x的打包格式
         br = BinaryHelper.BinaryReader(self.baseStream)
@@ -326,7 +334,7 @@ class AssetsLoader(object):
 
     def _getPackageIndex55(self):
         # 5.5.x
-        # print("Index Entry:%08x"%self.IndexEntryOffset)
+        print("Index Entry:%08x"%self.IndexEntryOffset)
         br = BinaryHelper.BinaryReader(self.baseStream)
         br.Seek(self.IndexEntryOffset)
 
@@ -342,7 +350,7 @@ class AssetsLoader(object):
             (offset, size, classid) = struct.unpack(
                 "3I", self.baseStream.read(0xc))
 
-            # print("%08x"%(offset + self.headerSize))
+            #print("%08x"%(offset + self.headerSize))
             position = br.Tell()
             index_entry = self.IndexEntry()
             index_entry.IndexID = i
@@ -362,7 +370,7 @@ class AssetsLoader(object):
             if (index_entry.ClassID in self.ClassIDDict):
                 ext_name = self.ClassIDDict[index_entry.ClassID][1]
             index_entry.ObjectName = fname + ext_name
-            # print("Entry %d %s :%08x,%08x,Class ID :%08x"%(index_entry.IndexID, index_entry.ObjectName,index_entry.Offset,index_entry.Size ,classid))
+            #print("Entry %d %s :%08x,%08x,Class ID :%08x"%(index_entry.IndexID, index_entry.ObjectName,index_entry.Offset,index_entry.Size ,classid))
             self.EntryList.append(index_entry)
 
         pass
@@ -378,6 +386,8 @@ class AssetsLoader(object):
         result = ""
         for var in name:
             if 0x20 <= ord(var) <= 0x7e:
+                if (ord(var) == 0x2f):
+                    var = "_"
                 result += var
                 pass
             else:
@@ -429,9 +439,10 @@ class AssetsLoader(object):
             fs = open(name, "rb")
             data = fs.read()
             length = len(data)
+            fs.close()
             pos = self.baseStream.tell()
             if pos % 8 != 0:
-                self.baseStream.write("\x00" * (8 - pos))
+                self.baseStream.write("\x00" * (8 - pos%8))
                 pos = self.baseStream.tell()
 
             self.baseStream.write(data)
